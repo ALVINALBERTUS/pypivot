@@ -1,0 +1,645 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Oct  8 23:52:49 2023
+
+@author: alvinalbertus
+"""
+class PyPivotManager:
+    def __init__(self):
+        self.dataset = [
+               {'S/N':1,'Name':'Albert','Gender':'Male','Age':21,'Employment':'Employee','Salary':4800},
+               {'S/N':2,'Name':'Bob','Gender':'Male','Age':21,'Employment':'Employee','Salary':5000},
+               {'S/N':3,'Name':'Charles','Gender':'Male','Age':22,'Employment':'Employee','Salary':6000},
+               {'S/N':4,'Name':'Derrick','Gender':'Male','Age':23,'Employment':'Self-Employed','Salary':10000},
+               {'S/N':5,'Name':'Fred','Gender':'Male','Age':23,'Employment':'Unemployed','Salary':1200},
+               {'S/N':6,'Name':'George','Gender':'Male','Age':25,'Employment':'Self-Employed','Salary':12000},
+               {'S/N':7,'Name':'Hubert','Gender':'Male','Age':26,'Employment':'Unemployed','Salary':1000},
+               {'S/N':8,'Name':'Isaac','Gender':'Male','Age':28,'Employment':'Employee','Salary':3000},
+               {'S/N':9,'Name':'John','Gender':'Male','Age':30,'Employment':'Employee','Salary':2500},    
+               {'S/N':10,'Name':'Kerry','Gender':'Male','Age':30,'Employment':'Self-Employed','Salary':8500},    
+               {'S/N':11,'Name':'Linda','Gender':'Female','Age':21,'Employment':'Self-Employed','Salary':9000},    
+               {'S/N':12,'Name':'Mindy','Gender':'Female','Age':21,'Employment':'Self-Employed','Salary':8500},
+               {'S/N':13,'Name':'Nicole','Gender':'Female','Age':22,'Employment':'Unemployed','Salary':2000},   
+               {'S/N':14,'Name':'Oprah','Gender':'Female','Age':22,'Employment':'Employee','Salary':6500},    
+               {'S/N':15,'Name':'Penny','Gender':'Female','Age':23,'Employment':'Employee','Salary':7500},    
+               {'S/N':16,'Name':'Queenie','Gender':'Female','Age':25,'Employment':'Employee','Salary':7000},    
+               {'S/N':17,'Name':'Ruby','Gender':'Female','Age':25,'Employment':'Employee','Salary':4000},    
+               {'S/N':18,'Name':'Stacy','Gender':'Female','Age':27,'Employment':'Employee','Salary':3500},    
+               {'S/N':19,'Name':'Tiffany','Gender':'Female','Age':27,'Employment':'Self-Employed','Salary':5000},
+               {'S/N':20,'Name':'Ursula','Gender':'Female','Age':27,'Employment':'Unemployed','Salary':1500},                
+        ]
+        
+        self.ptablefield = {
+            "Columns":[],
+            "Rows":[],
+            "Values":{}            
+            }
+        
+        # self.ptablefield = {
+        #     "Columns":["Employment"],
+        #     "Rows":[],
+        #     "Values":{"S/N":"Count","Salary":"Count"}            
+        #     }
+        
+        # self.ptablefield = {
+        #     "Columns":[],
+        #     "Rows":["Employment"],
+        #     "Values":{"S/N":"Count","Salary":"Count"}            
+        #     }
+        
+        # self.ptablefield = {
+        #     "Columns":["Employment"],
+        #     "Rows":["Name","Gender"],
+        #     "Values":{"S/N":"Count","Salary":"Count"}            
+        #     }  
+        
+        # self.ptablefield = {
+        #     "Columns":["Employment"],
+        #     "Rows":["Name","Gender"],
+        #     "Values":{"S/N":"Count","Salary":"Count"}            
+        #     }        
+
+        # self.ptablefield = {
+        #     "Columns":[],
+        #     "Rows":[],
+        #     "Values":{"S/N":"Count"}            
+        #     }        
+        
+        # self.rowcolumndisplay = "Row"
+        
+        # self.rowcolumndisplay = "Column"
+        
+        self.rowcolumndisplay = None
+              
+        self.maxrowlen = 12
+        
+        self.maxcollen = 0
+        
+        self.bottom = []
+         
+    def get_input(self, prompt, valid_options):
+        while True:
+            inp = input(prompt)
+            if inp in valid_options:
+                return inp
+            print(f"Error: Please enter a valid option from {valid_options}")
+
+    def new_dataset(self):
+        if self.dataset:
+            choice = self.get_input('There is an existing dataset. Do you want to reinitialize? (Y/N) ', ['Y', 'y', 'N', 'n'])
+            if choice.lower() == 'y':
+                self.dataset = []
+                self.ptablefield = {
+                    "Columns":[],
+                    "Rows":[],
+                    "Values":{}            
+                    }
+                self.rowcolumndisplay = None
+                print('Dataset is reinitialized!')
+            else:
+                print('Dataset is maintained!')
+        else:
+            self.dataset = []
+            self.ptablefield = {
+                "Columns":[],
+                "Rows":[],
+                "Values":{}            
+                }
+            self.rowcolumndisplay = None
+            print('Dataset is initialized!')
+
+    def add_column(self):
+        column_name = input("Enter an alphanumeric attribute name for the new column(case-sensitive): ")
+        if not column_name.isalnum():
+            print("Invalid column name. It should be alphanumeric.")
+            return
+        if self.dataset and any(column_name == key for key in self.dataset[0] if self.dataset):
+            print(f"Column '{column_name}' already exists!")
+            return 
+        if not self.dataset:
+            self.dataset.append({column_name: None})
+        else:
+            if all(value == None for value in self.dataset[0].values()):
+                self.dataset[0][column_name] = None
+            else:
+                default_value = input(f"Enter a default value for the new column '{column_name}': ")
+                for row in self.dataset:
+                    row[column_name] = default_value
+        print(f"Column '{column_name}' added successfully!")
+         
+    def delete_column(self):
+        del_column_name = input("Enter a column (case-sensitive) to delete: ")
+        if any(del_column_name == key for key in self.dataset[0]):
+            for dict in self.dataset:
+                dict.pop(del_column_name)
+            print(f"Column '{del_column_name}' deleted successfully!")
+        else:
+            print(f"Column '{del_column_name}' does not exist!")
+        return
+    
+    def add_row(self):
+        if not self.dataset:
+            print("Error: No columns found!")
+            return
+        new_row = {}
+        example_row = self.dataset[0]
+        all_none = all(value is None for value in example_row.values())
+        for column_name in example_row.keys():
+            if column_name == 'S/N':
+                new_row[column_name] = 1 if all_none else len(self.dataset) + 1
+            else:
+                column_value = input(f"Enter a value for {column_name}: ")
+                while not column_value.strip():
+                    print(f"{column_name} cannot be empty. Please enter a value.")
+                    column_value = input(f"Enter a value for {column_name}: ")
+                new_row[column_name] = column_value
+        if all_none:
+            self.dataset[0] = new_row
+        else:
+            self.dataset.append(new_row)
+            
+    def delete_row(self):
+        if not self.dataset:
+            print("Error: No existing rows found!")
+            return    
+        del_row = -1
+        while True:
+            try:
+                del_row = int(input("Enter a row to delete: ")) - 1
+                if del_row < 0:
+                    raise ValueError("Row index must be positive!")
+                break
+            except ValueError as e:
+                print("Invalid row index!", e)
+    
+        if 0 <= del_row < len(self.dataset):
+            self.dataset.pop(del_row)
+            print(f"Row {del_row + 1} deleted successfully!")
+            for i in range(del_row, len(self.dataset)):
+                self.dataset[i]['S/N'] -= 1
+        else:
+            print("Error: Row does not exist!")        
+
+    def viewPtablefields(self):
+        if not self.ptablefield["Columns"] and not self.ptablefield["Rows"] and not self.ptablefield["Values"]:
+            print("Error: Pivot Table fields are currently empty!")
+            return
+        print("Columns:")
+        for col in self.ptablefield["Columns"]:
+            print(col)
+        print("\nRows:")
+        for row in self.ptablefield["Rows"]:
+            print(row)
+        print("\nValues:")
+        for key , value in self.ptablefield["Values"].items():
+            print(f"{key}-{value}")
+
+    def addPtablefield(self):
+        validatt = list(self.dataset[0].keys())       
+        attname = self.get_input("Please enter attribute name: ", validatt)
+        def check_string(self, s):
+            if s in self.ptablefield["Columns"] or s in self.ptablefield["Rows"]:
+                return True
+            for row, columns in self.ptablefield["Values"].items():
+                if s in row:
+                    return True
+            return False
+        if check_string(self, attname):
+            print('Error: There is a pivot table field that is already entered for that attribute!')
+            return     
+        fieldtype = self.get_input(f"Please enter {attname} field type: ",['Columns','Rows','Values'])
+        if fieldtype == 'Values':
+            valtype = self.get_input("Please enter your selected aggregation function: ", ['Count','Sum','Average','Minimum','Maximum'])
+            if bool(self.ptablefield["Values"]):
+                rowcoldis = self.get_input("Would you like column-wise or row-wise display? ",['Column','Row'])
+                self.rowcolumndisplay = rowcoldis
+            self.ptablefield["Values"][attname] = valtype
+        elif fieldtype == 'Columns':
+            self.ptablefield["Columns"].append(attname)
+        elif fieldtype == 'Rows':
+            self.ptablefield["Rows"].append(attname)
+           
+    def delPtablefields(self):
+        all_fields = []
+        all_fields.extend(self.ptablefield["Columns"])
+        all_fields.extend(self.ptablefield["Rows"])
+        all_fields.extend(self.ptablefield["Values"].keys())
+        if not all_fields:
+            print("No fields available for deletion.")
+            return
+        print("Select a field to delete from the following options:")
+        for i, field in enumerate(all_fields, 1):
+            print(f"{i}: {field}")
+        selected_index = -1
+        while selected_index < 0:
+            try:
+                selected_index = int(input("Enter the number corresponding to the field: ")) - 1 
+                if selected_index < 0 or selected_index >= len(all_fields):
+                    print("Invalid selection. Please select a number from the list.")
+                    selected_index = -1
+            except ValueError:
+                print("Invalid input. Please enter a number.")
+                choice = self.get_input('Do you want to continue deleting fields? (Y/N) ', ['Y', 'y', 'N', 'n'])
+                if choice.lower() == 'y':
+                    continue
+                else:
+                    return              
+        selected_field = all_fields[selected_index]
+        if selected_field in self.ptablefield["Columns"]:
+            self.ptablefield["Columns"].remove(selected_field)
+        elif selected_field in self.ptablefield["Rows"]:
+            self.ptablefield["Rows"].remove(selected_field)
+        elif selected_field in self.ptablefield["Values"]:
+            del self.ptablefield["Values"][selected_field]
+        print(f"Field '{selected_field}' has been deleted.")
+
+
+
+    def calculate_aggregate(self, data, func): 
+        """
+        No time to implement the data in the table so writing my thought process.
+        Use the calculate aggregate function(need amend to take in the function from the table) to calculate value to cell. 
+        To amend and make it part of print_row_recursive. 
+        put into 1 list all the columns and another list all the rows.
+        traverse in a nested loop using the location coordinate(row,column)its in to search the dataset for all the values that matches the filter. 
+        print out the value with end=empty double quote and space them out based on maxcollen once the loop end then print() go next one and repeat recursively
+        """
+        if func == 'Count':
+            return len(data)
+        if not data:
+            return None
+        if func == 'Sum':
+            try:
+                return sum(float(item) for item in data)
+            except ValueError:
+                return None
+        if func == 'Average':
+            try:
+                return sum(float(item) for item in data) / len(data)
+            except ValueError:
+                return None
+        if func == 'Minimum':
+            try:
+                return min(float(item) for item in data)
+            except ValueError:
+                return None
+        if func == 'Maximum':
+            try:
+                return max(float(item) for item in data)
+            except ValueError:
+                return None
+    
+    def generate_pivot_table(self):       
+        if len(self.ptablefield["Values"]) == 0:
+            return print("Error: No values field entered. Pivot table is empty")
+        elif len(self.ptablefield["Rows"]) == 0:
+            print("Warning: No rows field entered. Pivot table does not cotain rows")
+        elif len(self.ptablefield["Columns"]) == 0:
+            print("Warning: No columns field entered. Pivot table does not cotain columns")
+        elif len(self.ptablefield["Columns"]) == 0 and len(self.ptablefield["Rows"]) == 0:
+            return print("Error: No rows or columns field entered. Value is function(sum,count,min,max,avg) of whole dataset")
+            
+        def split_dataset_by_categories(dataset, categories):
+            def recursive_split(subset, remaining_categories):
+                if not remaining_categories:
+                    return subset
+                current_category, *next_categories = remaining_categories
+                split_data = {}
+                for item in subset:
+                    key_value = item[current_category]
+                    if key_value not in split_data:
+                        split_data[key_value] = []
+                    split_data[key_value].append(item)
+                for key_value, sub_subset in split_data.items():
+                    split_data[key_value] = recursive_split(sub_subset, next_categories)
+                return split_data
+            result = recursive_split(dataset, categories)
+            return result
+        
+        def split(category):
+            categories_to_split_by = self.ptablefield[category]
+            dataset = self.dataset
+            nested_datasets = split_dataset_by_categories(dataset, categories_to_split_by)
+            return nested_datasets
+
+        def extract_keys_from_nested_data(nested_data):
+            if nested_data == self.dataset:
+                return
+            if all(isinstance(value, list) for value in nested_data.values()):
+                return sorted(nested_data.keys())
+            elif isinstance(nested_data, dict):
+                processed_data = {}
+                for key, value in nested_data.items():
+                    extracted_keys = extract_keys_from_nested_data(value)
+                    if extracted_keys:
+                        processed_data[key] = extracted_keys
+                return processed_data
+            else:
+                return None
+            
+        def subheaders_to_print():
+            row_nested_dataset = split("Rows")
+            row_result = extract_keys_from_nested_data(row_nested_dataset)     
+            col_nested_dataset = split("Columns")
+            col_result = extract_keys_from_nested_data(col_nested_dataset)
+            return row_result,col_result
+        
+        def max_row_header_len(data, depth=0, col_spacing=5):
+            self.maxrowlen = 12
+            if len(self.ptablefield["Values"])>1 and self.rowcolumndisplay == "Row":
+                for key,values in self.ptablefield["Values"].items():
+                    string = (f"Total {values} of {key}")
+                    if self.maxrowlen < int(len(string)):
+                        self.maxrowlen = int(len(string))          
+            if isinstance(data, dict):
+                for key, value in data.items():
+                    string =(" " * (depth * col_spacing) + str(key)+":")
+                    if self.maxrowlen < int(len(string)):
+                        self.maxrowlen = int(len(string))
+                    max_row_header_len(value, depth+1)
+            elif isinstance(data, list):
+                for item in data:
+                    string = (" " * (depth * col_spacing) + str(item))
+                    if self.maxrowlen < int(len(string)):
+                        self.maxrowlen = int(len(string))
+                    if len(self.ptablefield["Values"]) > 1 and self.rowcolumndisplay == "Row":
+                        for key,value in self.ptablefield["Values"].items():
+                            string = (" " * (depth * col_spacing) + f"{value} of {key}")
+                            if self.maxrowlen < int(len(string)):
+                                self.maxrowlen = int(len(string))
+
+        def max_col_header_len(data):
+            if isinstance(data, list):
+                max_length = max(len(value) for value in data)
+                self.maxcollen = max_length
+            if isinstance(data, dict):
+                for key, value in data.items():
+                    self.maxcollen = max(self.maxcollen, len(str(key)))
+                    if isinstance(value, dict):
+                        max_col_header_len(value)
+                    elif isinstance(value, list):
+                        for item in value:
+                            self.maxcollen = max(self.maxcollen, len(str(item)))
+            self.maxcollen += 2
+            
+        def print_row_recursive(data, depth=0, col_spacing=5):
+            if isinstance(data, dict):
+                for key, value in data.items():
+                    print(" " * (depth * col_spacing) + str(key)+":")
+                    print_row_recursive(value, depth + 1)
+            elif isinstance(data, list):
+                for item in data:
+                    if len(self.ptablefield["Values"]) > 1 and self.rowcolumndisplay == "Row":
+                        print(" " * (depth * col_spacing) + str(item)+":")
+                        for key,value in self.ptablefield["Values"].items():
+                            print(" " * (depth * col_spacing) + f"{value} of {key}")
+                    else:
+                        print(" " * (depth * col_spacing) + str(item))
+                        
+        def extract_bottom_col_from_nested_dict(colheader):
+            all_numbers = []
+            def recurse_dict(current_dict):
+                if isinstance(current_dict, list):
+                    return current_dict
+                for key, value in current_dict.items():
+                    if isinstance(value, list):
+                        all_numbers.extend(value)
+                    elif isinstance(value, dict):
+                        recurse_dict(value)
+            recurse_dict(colheader)        
+            return all_numbers       
+
+        def calculate_col_length_dynamic_depth(colheader):
+            results_by_depth = {}        
+            def recursive_calculation(d, current_depth=0):
+                if isinstance(d, list):
+                    return
+                total_count = 0
+                if current_depth not in results_by_depth:
+                    results_by_depth[current_depth] = []   
+                for key, value in d.items():
+                    if isinstance(value, list):
+                        count = len(value)
+                        total_count += count
+                        results_by_depth[current_depth].append((key, count))        
+                    elif isinstance(value, dict):
+                        count = recursive_calculation(value, current_depth=current_depth + 1)
+                        total_count += count
+                        results_by_depth[current_depth].append((key, count))      
+                return total_count       
+            recursive_calculation(colheader)     
+            return results_by_depth
+     
+        def print_before_column(rowheader,colheader):
+            print()
+            print("Rows = " , rowheader , "\n")
+            print("Columns = " , colheader , "\n")
+            print("Values = ", end="")
+            for key , value in self.ptablefield["Values"].items():
+                print(f"{key}-{value}  ",end="")
+            print()
+            print()
+            print("Display-wise = ",end="") 
+            print(self.rowcolumndisplay)
+            print()
+            print("-" * 250)
+            print("Pivot Table")
+            print("-" * 250)            
+
+        def print_column(colheader):
+            if isinstance(colheader, list):
+                if len(self.ptablefield["Values"])==1:
+                    for key,value in self.ptablefield["Values"].items():
+                        indent = int(len(value + key)) + 4
+                        print(f"{value} of {key}" + " "*(max(self.maxrowlen,indent)-indent+4) + "Column Labels:")
+                        self.maxrowlen = max(self.maxrowlen,indent)
+                    print(" "*(self.maxrowlen + 4),end="")
+                    for values in colheader:    
+                        print(values + " "*(self.maxcollen - len(values)),end="")
+                    print("Grand Total:")
+                    print()
+                else:
+                    print(" "*(self.maxrowlen + 4) + "Column Labels:")
+                    print(" "*(self.maxrowlen + 4),end="")
+                    self.bottom = []
+                    for _ in range(len(colheader)):
+                        for key,values in self.ptablefield["Values"].items():
+                            string = (f"{values} of {key}")
+                            self.bottom.append(string)
+                            if self.maxcollen <= len(str(string)):
+                                self.maxcollen = len(str(string)) + 3
+                    for values in colheader:    
+                        print(values + " "*(self.maxcollen - len(values)) + " "*self.maxcollen*((len(self.ptablefield["Values"]))-1),end="")
+                    print()
+                    print(" "*(self.maxrowlen + 4),end="")
+                    for values in self.bottom:
+                        print(str(values) + " "*(self.maxcollen-len(str(values))),end="")
+                    for key,values in self.ptablefield["Values"].items():
+                        print(f"Total {values} of {key}" +" "*3,end="")
+                    print()
+                return
+            elif len(self.ptablefield["Values"])==1:
+                for key,value in self.ptablefield["Values"].items():
+                    indent = int(len(value + key)) + 4
+                    print(f"{value} of {key}" + " "*(max(self.maxrowlen,indent)-indent+4) + "Column Labels:",end="")
+                    self.maxrowlen = max(self.maxrowlen,indent)
+                colprint = calculate_col_length_dynamic_depth(colheader)
+                for depth, counts in colprint.items():
+                    print()
+                    print(" "*(self.maxrowlen+4),end="")
+                    for item in counts:
+                        print(str(item[0]) + " "*(self.maxcollen - len(str(item[0]))) + " "*(((int(item[1]))-1)*(self.maxcollen)),end="")                    
+                print()
+                self.bottom = extract_bottom_col_from_nested_dict(colheader)
+                print(" "*(self.maxrowlen+4),end="")
+                for values in self.bottom:
+                    print(str(values) + " "*(self.maxcollen-len(str(values))),end="")
+                print("Grand Total:")
+                print()
+                return
+            elif len(self.ptablefield["Values"])>1 and self.rowcolumndisplay != "Column":
+                print(" "*(self.maxrowlen + 4) + "Column Labels:",end="")
+                colprint = calculate_col_length_dynamic_depth(colheader)
+                for depth, counts in colprint.items():
+                    print()
+                    print(" "*(self.maxrowlen+4),end="")
+                    for item in counts:
+                        print(str(item[0]) + " "*(self.maxcollen - len(str(item[0]))) + " "*(((int(item[1]))-1)*(self.maxcollen)),end="")                    
+                print()
+                self.bottom = extract_bottom_col_from_nested_dict(colheader)
+                print(" "*(self.maxrowlen+4),end="")
+                for values in self.bottom:
+                    print(str(values) + " "*(self.maxcollen-len(str(values))),end="")
+                print("Grand Total:")
+                print()
+                return
+            else:
+                print(" "*(self.maxrowlen + 4) + "Column Labels:",end="")
+                colprint = calculate_col_length_dynamic_depth(colheader)
+                newdepth = len(colprint)
+                self.bottom = extract_bottom_col_from_nested_dict(colheader)
+                colprint[newdepth] = []
+                for values in self.bottom:
+                    colprint[newdepth].append((values,len(self.ptablefield["Values"])))
+                self.bottom = []
+                for _ in range(len(colprint[newdepth])):
+                    for key,values in self.ptablefield["Values"].items():
+                        string = (f"{values} of {key}")
+                        self.bottom.append(string)
+                        if self.maxcollen <= len(str(string)):
+                            self.maxcollen = len(str(string)) + 3  
+                max_depth = max(colprint.keys())
+                for depth in colprint:
+                    if depth != max_depth:
+                        colprint[depth] = [(item[0], item[1] * len(self.ptablefield["Values"])) for item in colprint[depth]]
+                for depth, counts in colprint.items():
+                    print()
+                    print(" "*(self.maxrowlen+4),end="")
+                    for item in counts:
+                        print(str(item[0]) + " "*(self.maxcollen - len(str(item[0]))) + " "*(((int(item[1]))-1)*(self.maxcollen)),end="")                 
+                print()
+                print(" "*(self.maxrowlen+4),end="")
+                for values in self.bottom:
+                    print(str(values) + " "*(self.maxcollen-len(str(values))),end="")
+                for key,values in self.ptablefield["Values"].items():
+                    print(f"Total {values} of {key}" +" "*3,end="")
+                print()
+                return
+                
+        def reinitialise_len_and_bot():
+            self.maxrowlen = 12    
+            self.maxcollen = 0       
+            self.bottom = []
+            
+        def print_row(rowheader):
+            print("Row Labels:")
+            print_row_recursive(rowheader)
+            print()
+            if len(self.ptablefield["Values"])>1 and self.rowcolumndisplay != "Column":
+                for key,values in self.ptablefield["Values"].items():
+                    print(f"Total {values} of {key}")
+            else:
+                print("Grand Total: ")
+            
+        def print_after_row():
+            print("-" * 250)
+        
+        def final_print():
+            rowheader,colheader = subheaders_to_print()
+            max_row_header_len(rowheader)
+            max_col_header_len(colheader)
+            print_before_column(rowheader,colheader)
+            if len(self.ptablefield["Columns"]) == 0:
+                self.rowcolumndisplay = "Row"
+            else:
+                print_column(colheader)
+            if len(self.ptablefield["Rows"]) == 0:
+                self.rowcolumndisplay = "Column"
+            else:
+                print_row(rowheader)
+            if len(self.ptablefield["Columns"]) == 0 and len(self.ptablefield["Rows"]) == 0:
+                for key,values in self.ptablefield["Values"].items():
+                    print(f"{values} of {key}: ")
+            print_after_row()
+            print("**No time to implement the data in the table so writing my thought process.Use the calculate aggregate function(need amend to take in the function from the table) to calculate value for each cell. To amend and make it part of print_row_recursive. Put into 1 list all the columns and another list all the rows.traverse in a nested loop using the location coordinate(row,column)its in to search the dataset for all the values that matches the filter. print out the value with end=empty double quote and space them out based on maxcollen once the loop end then print() go next one and repeat recursively")      
+
+        final_print()
+        reinitialise_len_and_bot()
+        
+    # def debugger(self):
+    #     # For debugging purposes
+    #     print(self.dataset)
+    #     print("\nColumns:")
+    #     for col in self.ptablefield["Columns"]:
+    #         print(col)
+    #     print("\nRows:")
+    #     for row in self.ptablefield["Rows"]:
+    #         print(row)
+    #     print("\nValues:")
+    #     for key , value in self.ptablefield["Values"].items():
+    #         print(f"{key}-{value}")
+    #     print("\nRowColDis= " + self.rowcolumndisplay)
+    #     print("\nMaxrowlen,Maxcollen,Bottom Col= ",self.maxrowlen,self.maxcollen,self.bottom)
+                           
+    def main(self):
+        while True:
+            print('\nPlease choose the action to be performed:')
+            print('1: New Dataset')
+            print('2: Add Column')
+            print('3: Delete Column')
+            print('4: Add Row')
+            print('5: Delete Row')
+            print('6: View Pivot Table Fields')
+            print('7: Add Pivot Table Field')
+            print('8: Delete Pivot Table Field')
+            print('9: View Pivot Table')
+            print('10: Exit')
+            choice = self.get_input('Action:', ['1', '2', '3', '4', '5', '6','7','8','9','10'])
+            choice = int(choice)
+            if choice == 1:
+                self.new_dataset()
+            elif choice == 2:
+                self.add_column()
+            elif choice == 3:
+                self.delete_column()
+            elif choice == 4:
+                self.add_row()
+            elif choice == 5:
+                self.delete_row()
+            elif choice == 6:
+                self.viewPtablefields()
+            elif choice == 7:
+                self.addPtablefield()
+            elif choice == 8:
+                self.delPtablefields()
+            elif choice == 9:
+                self.generate_pivot_table()
+            # elif choice == 99:
+            #     self.debugger()
+            else:
+                return
+        
+if __name__ == "__main__":
+    pypivot = PyPivotManager()
+    pypivot.main()
